@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Emotion Regulation Task</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/jspsych.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-image-keyboard-response.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-survey-text.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-fullscreen.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/css/jspsych.css">
+  <style>
+    .center-content, .strategy-instruction, .continue-text, body, .jspsych-btn, input[type="text"].jspsych-survey-text-input, input[type="radio"] + label {
+      text-align: center; 
+      font-size: 30px; 
+      margin: auto;
+      padding: 20px;
+    }
+    .centered-text {
+      font-size: 30px; 
+      text-align: justify; 
+      text-align-last: center;
+      max-width: 1000px; 
+      margin: auto; 
+      padding: 20px; 
+    }
+    .strategy-text {
+      font-size: 30px; 
+      text-align: justify;
+      text-align-last: center;
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+    .strategy-name {
+      font-size: 36px;  
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .continue-text {
+      font-size: 20px; 
+    }
+    .rating-image {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .rating-scale {
+      text-align: center;
+      font-size: 20px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+// Paths to images
+var base_path_negative = './IAPS/ER_negative/';
+var base_path_neutral = './IAPS/ER_neutral/';
+var valence_image_path = './IAPS/valance.jpg';
+var arousal_image_path = './IAPS/arousal.jpg';
+var base_path_practice = './IAPS/practice/';
+
+// List of negative image filenames
+var negative_images = [
+  '1110', '1201', '1300', '1930', '2120', '2205', '2520', '2682', '2691', '2700',
+  '2722', '2751', '2800', '2900.1', '3180', '3181', '3220', '3230', '3301', '3350',
+  '3530', '5972', '6010', '6230', '6313', '6370', '6510', '6550', '6570', '6836',
+  '6840', '8230', '9008', '9080', '9102', '9120', '9140', '9160', '9180', '9181',
+  '9182', '9210', '9230', '9250', '9280', '9300', '9330', '9340', '9373', '9400'
+];
+
+// List of neutral image filenames
+var neutral_images = [
+  '1112', '1500', '1740', '2010', '2160', '2210', '2372', '2516', '2560', '5030',
+  '5250', '5395', '5532', '5990', '6150', '6241', '7000', '7004', '7025', '7186',
+  '7211', '7545', '8033', '9220', '9621'
+];
+
+var practice_images = [
+  '1022','5270','5500','7030','7031','9421','9430','9470','9560','9921'
+];
+
+// Function to generate image stimuli with full paths
+function generateStimuli(imageList, basePath) {
+  return imageList.map(function(image) {
+    return {stimulus: basePath + image + '.jpg'};
+  });
+}
+
+// Generate stimuli
+var negative_stimuli = generateStimuli(negative_images, base_path_negative);
+var neutral_stimuli = generateStimuli(neutral_images, base_path_neutral);
+
+// All stimuli
+var all_stimuli = jsPsych.randomization.shuffle(negative_stimuli.concat(neutral_stimuli));
+
+// Used stimuli index
+var current_index = 0;
+
+// Function to create a block with 10 negative and 5 neutral images
+function createBlock(strategy) {
+  var block_stimuli = all_stimuli.slice(current_index, current_index + 15);
+  current_index += 15;
+
+  return {
+    timeline: [fixation, stimulus, blank, rating],
+    timeline_variables: block_stimuli.map(function(s, index) {
+      return {
+        stimulus: s.stimulus,
+        trial: strategy.name.toLowerCase().replace(' ', '_') + ' ' + (index + 1),
+        cue: strategy.name
+      };
+    }),
+    repetitions: 1,
+    data: {cue: strategy.name}
+  };
+}
+
+// Enter fullscreen mode
+var enterFullscreenMode = {
+  type: 'fullscreen',
+  fullscreen_mode: true,
+  message: '<div style="font-size:40px;"><p>Click Next and the experiment will jump to full screen mode</p></div>',
+  button_label: "Next"
+};
+
+// Introductory instruction
+var introduction = {
+  type: 'html-keyboard-response',
+  stimulus: '<h1>Welcome to Our Emotion Regulation Study</h1>' +
+           '<div class="centered-text"style="line-height: 1.6;font-size: 26px; max-width: 1000px;">' +
+            '<p>Thank you for participating in this important study.</p>' +
+            '<p>In this task, you will be shown a series of images that may evoke emotional responses. We ask you to apply a specific emotion regulation strategy, which we will explain shortly, to manage your feelings in response to these images. After viewing each image, you will be asked to rate the valence (the pleasantness or unpleasantness) and arousal (the intensity of emotion) that you experienced.</p>' +
+            '<p>Please remember, there are no right or wrong answers in this task. We are interested in your personal experience, so please respond as honestly and spontaneously as possible.</p>' +
+            '<p>Press any key to continue.</p>',
+  post_trial_gap: 1000
+};
+
+// Participant number input
+var participant_number = {
+  type: 'survey-text',
+  questions: [{
+    prompt: '<div style="font-size:40px;"> Please enter your participant number:</div><br>',
+    required: true
+  }],
+  data: {task: 'participant_number'}
+};
+
+// Define the fixation cross
+var fixation = {
+  type: 'html-keyboard-response',
+  stimulus: '<div style="font-size:120px;font-weight: bold;">+</div>',
+  choices: jsPsych.NO_KEYS,
+  trial_duration: function() {
+    return Math.floor(Math.random() * 2000) + 1000; // 1-3 seconds
+  },
+  data: {task: 'fixation'}
+};
+
+// Define the stimulus display
+var stimulus = {
+  type: 'image-keyboard-response',
+  stimulus: jsPsych.timelineVariable('stimulus'),
+  choices: jsPsych.NO_KEYS,
+  trial_duration: 5000,
+  data: {task: 'stimulus', trial: jsPsych.timelineVariable('trial')}
+};
+
+// Define the blank screen
+var blank = {
+  type: 'html-keyboard-response',
+  stimulus: '<div style="font-size:60px;"></div>',
+  choices: jsPsych.NO_KEYS,
+  trial_duration: 1000,
+  data: {task: 'blank'}
+};
+
+// Define the combined rating for valence and arousal
+var rating = {
+  type: 'survey-likert',
+  preamble: '<p>Please rate your current emotional state using the following scales:</p>',
+  questions: [
+    {
+      prompt: valence_image_path,
+      name: 'valence',
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      required: true
+    },
+    {
+      prompt: arousal_image_path,
+      name: 'arousal',
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      required: true
+    }
+  ],
+  data: {
+    task: 'rating',
+    trial: jsPsych.timelineVariable('trial'),
+    cue: jsPsych.timelineVariable('cue')
+  },
+  on_load: () =>{
+    const labels = document.querySelectorAll('.jspsych-survey-likert-statement');
+    labels.forEach(label => {
+      const imgSrc = label.textContent.trim();
+      console.log(imgSrc);
+      if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = '';
+      img.className = 'jspsych-survey-likert-statement';
+      img.style.width = '900px'; 
+        img.style.height = 'auto'; 
+      label.parentNode.replaceChild(img, label);
+    }
+    });
+  },
+  on_finish: function(data) {
+    var response = data.response;
+    data.valence = response.valence;
+    data.arousal = response.arousal;
+  }
+};
+
+// Define the end-of-block rating using survey-likert
+var end_of_block_rating = {
+  type: 'survey-likert',
+  preamble: function() {
+    var strategy = jsPsych.data.get().last(1).values()[0].cue;
+    return '<p><div style="font-size:30px;">In the last few pics, you were asked to use the strategy: ' + strategy + '</div></p>' +
+           '<p><div style="font-size:30px;">How well did you follow the instruction? 1 means "Not at all", 9 means "Very well" </p>';
+  },
+  questions: [
+    {
+      prompt: "",
+      name: 'instruction_follow',
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      required: true
+    }
+  ],
+  data: {
+    task: 'end_of_block_rating',
+    strategy: function() { return jsPsych.data.get().last(1).values()[0].cue; }
+  },
+  on_finish: function(data) {
+    var response = data.response;
+    data.instruction_follow = response.instruction_follow;
+  }
+};
+
+// Define blocks with different strategies
+var strategies = [
+  {name: 'Just Watch', text: 'Please look at the following picture carefully.'},
+  {name: 'Distraction', text: 'Please look at the following picture carefully. Make sure to focus your thoughts on something emotionally neutral while viewing. For example, think about a flock of birds migrating in autumn. As you view the picture, try to concentrate on this neutral thought, maintaining your focus on something external and unrelated to the content of the image.'},
+  {name: 'Reappraisal', text: 'Please view the following picture carefully. As you look at the image, try to see the situation in a more positive light. This can be done in various ways, for example, by imagining advice you could offer the characters in the picture to improve their situation or by considering the positive impacts this event might have on their lives over time. Remember, even if the scenario seems difficult now, it could lead to beneficial outcomes. This task may be challenging, so do your best and consult the research assistant if you have any questions. While it’s crucial to focus on the image, try to think about it from a positive perspective.'},
+  {name: 'Suppression', text: 'Please look at the following picture carefully. Should you feel any negative emotions like sadness while viewing the picture, try to manage these emotions as much as possible. Attempt to not show any outward signs of what you\'re feeling, such as frowning or crying. Observe how much control you can maintain over your own distress and discomfort.'},
+  {name: 'Acceptance', text: 'Please view the following picture carefully. As you observe, allow yourself to fully experience your emotions without trying to alter or suppress them. It is normal for this picture to evoke some discomfort or negative feelings. Let your emotions flow naturally, fully engaging with them without any attempt to control. This might be challenging, so ensure you do your best and ask the research assistant if you need assistance. It’s important to focus on the image but let your feelings proceed naturally.'}
+];
+
+// Define the strategy instruction screen 
+function instruction(strategy) {
+  return {
+    type: 'html-keyboard-response',
+    stimulus: `<div class="strategy-name">${strategy.name}</div><div class="strategy-text">${strategy.text}</div><p><div style="font-size:30px;">Press Enter if you understand the instruction to continue.</p>`,
+    choices: ['Enter'],
+    data: {task: 'instruction', strategy: strategy.name}
+  };
+}
+
+// Function to generate practice stimuli
+function generatePracticeStimuli() {
+  return practice_images.map(function(image) {
+    return {stimulus: base_path_practice + image + '.jpg'};
+  });
+}
+
+// Function to create practice trial
+function createPracticeTrial(strategy) {
+  var images = jsPsych.randomization.sampleWithoutReplacement(generatePracticeStimuli(), 2);
+  var practiceTrial = [];
+  practiceTrial.push(instruction(strategy));
+
+  images.forEach(function(img, index) {
+    practiceTrial.push(fixation);
+    practiceTrial.push({
+      type: 'image-keyboard-response',
+      stimulus: img.stimulus,
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 5000,
+      data: {task: 'stimulus', trial: strategy.name.toLowerCase().replace(' ', '_') + '_practice_' + (index + 1)}
+    });
+    practiceTrial.push(rating);
+  });
+
+  practiceTrial.push({
+    type: 'html-keyboard-response',
+    stimulus: '<div style="font-size:30px;">Next, you will see the formal trials. Press any key to continue.</div>',
+    choices: jsPsych.ALL_KEYS
+  });
+
+  return practiceTrial;
+}
+
+// Create blocks for each strategy
+var blocks = strategies.map(function(strategy) {
+  var trials = [];
+  trials = createPracticeTrial(strategy);
+  trials.push(instruction(strategy));
+  trials.push(createBlock(strategy));
+  trials.push(end_of_block_rating);
+  return {timeline: trials};
+});
+
+// Define the thank you screen
+var thankYouScreen = {
+  type: 'html-keyboard-response',
+  stimulus: '<div style="font-size:40px;">The experiment is over, thank you for your participation!</div>' +
+            '<p style="font-size:30px;">Press any key to finish.</p>'
+};
+
+// Ensure 'Just Watch' is the first block and randomize the rest
+var timeline = [enterFullscreenMode, participant_number, introduction]
+.concat([blocks[0]])
+.concat(jsPsych.randomization.shuffle(blocks.slice(1)))
+.concat(thankYouScreen);;
+
+
+// Initialize jsPsych
+jsPsych.init({
+  timeline: timeline,
+  on_finish: function() {
+    var participant_number = jsPsych.data.get().filter({task: 'participant_number'}).values()[0].response.Q0;
+    var total_time = jsPsych.totalTime();
+    var data = jsPsych.data.get().ignore('internal_node_id').csv();
+    var blob = new Blob([participant_number + ',' + total_time + '\n' + data], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'data_' + participant_number + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+});
+</script>
+</body>
+</html>
