@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>情绪调节任务</title>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/jspsych.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-html-keyboard-response.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-html-button-response.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-image-keyboard-response.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-survey-likert.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-survey-text.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/plugins/jspsych-fullscreen.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jspsych@6.3.1/css/jspsych.css">
+  <style>
+    .center-content, .strategy-instruction, .continue-text, body, .jspsych-btn, input[type="text"].jspsych-survey-text-input, input[type="radio"] + label {
+      text-align: center; 
+      font-size: 30px; 
+      margin: auto;
+      padding: 20px;
+    }
+    .centered-text {
+      font-size: 30px; 
+      text-align: justify; 
+      text-align-last: center;
+      max-width: 1000px; 
+      margin: auto; 
+      padding: 20px; 
+    }
+    .strategy-text {
+      font-size: 30px; 
+      text-align: justify;
+      text-align-last: center;
+      max-width: 1000px;
+      margin: auto;
+      padding: 20px;
+    }
+    .strategy-name {
+      font-size: 36px;  
+      font-weight: bold;
+      text-align: center;
+      margin: 20px 0;
+    }
+    .continue-text {
+      font-size: 20px; 
+    }
+    .rating-image {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .rating-scale {
+      text-align: center;
+      font-size: 20px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<script>
+
+// Paths to images hosted on GitHub
+var base_path_negative = 'https://raw.githubusercontent.com/1996Doinb/Emotion-Regulation-Task/main/IAPS/ER_negative/';
+var base_path_neutral = 'https://raw.githubusercontent.com/1996Doinb/Emotion-Regulation-Task/main/IAPS/ER_neutral/';
+var valence_image_path = 'https://raw.githubusercontent.com/1996Doinb/Emotion-Regulation-Task/main/IAPS/valance zh.jpg';
+var arousal_image_path = 'https://raw.githubusercontent.com/1996Doinb/Emotion-Regulation-Task/main/IAPS/arousal zh.jpg';
+var base_path_practice = 'https://raw.githubusercontent.com/1996Doinb/Emotion-Regulation-Task/main/IAPS/practice/';
+
+// List of negative image filenames
+var negative_images = [
+  '1110', '1201', '1300', '1930', '2120', '2205', '2520', '2682', '2691', '2700',
+  '2722', '2751', '2800', '2900.1', '3180', '3181', '3220', '3230', '3301', '3350',
+  '3530', '5972', '6010', '6230', '6313', '6370', '6510', '6550', '6570', '6836',
+  '6840', '8230', '9008', '9080', '9102', '9120', '9140', '9160', '9180', '9181',
+  '9182', '9210', '9230', '9250', '9280', '9300', '9330', '9340', '9373', '9400'
+];
+
+// List of neutral image filenames
+var neutral_images = [
+  '1112', '1500', '1740', '2010', '2160', '2210', '2372', '2516', '2560', '5030',
+  '5250', '5395', '5532', '5990', '6150', '6241', '7000', '7004', '7025', '7186',
+  '7211', '7545', '8033', '9220', '9621'
+];
+
+var practice_images = [
+  '1022','5270','5500','7030','7031','9421','9430','9470','9560','9921'
+];
+
+// Function to generate image stimuli with full paths
+function generateStimuli(imageList, basePath) {
+  return imageList.map(function(image) {
+    return {stimulus: basePath + image + '.jpg'};
+  });
+}
+
+// Generate stimuli
+var negative_stimuli = generateStimuli(negative_images, base_path_negative);
+var neutral_stimuli = generateStimuli(neutral_images, base_path_neutral);
+
+// All stimuli
+var all_stimuli = jsPsych.randomization.shuffle(negative_stimuli.concat(neutral_stimuli));
+
+// Used stimuli index
+var current_index = 0;
+
+// Function to create a block with 10 negative and 5 neutral images
+function createBlock(strategy) {
+  var block_stimuli = all_stimuli.slice(current_index, current_index + 15);
+  current_index += 15;
+
+  return {
+    timeline: [fixation, stimulus, blank, rating],
+    timeline_variables: block_stimuli.map(function(s, index) {
+      return {
+        stimulus: s.stimulus,
+        trial: strategy.name.toLowerCase().replace(' ', '_') + ' ' + (index + 1),
+        cue: strategy.name
+      };
+    }),
+    repetitions: 1,
+    data: {cue: strategy.name}
+  };
+}
+
+// Enter fullscreen mode
+var enterFullscreenMode = {
+  type: 'fullscreen',
+  fullscreen_mode: true,
+  message: '<div style="font-size:40px;"><p>点击“下一步”，实验将进入全屏模式</p></div>',
+  button_label: "下一步"
+};
+
+// Introductory instruction
+var introduction = {
+  type: 'html-keyboard-response',
+  stimulus: '<h1>欢迎参加我们的情绪调节研究</h1>' +
+           '<div class="centered-text"style="line-height: 1.6;font-size: 26px; max-width: 1000px;">' +
+            '<p>感谢您参与这项重要的研究。</p>' +
+            '<p>在这个任务中，您将看到一系列可能引发情绪反应的图片。我们将要求您应用一种特定的情绪调节策略（稍后会解释），以管理您对这些图片的感受。每张图片展示后，您将被要求对您体验到的愉悦度和唤醒度进行评分。</p>' +
+            '<p>请记住，此任务没有正确或错误的答案。我们感兴趣的是您的个人体验，因此请尽可能诚实和自发地作答。</p>' +
+            '<p>按任意键继续。</p>',
+  post_trial_gap: 1000
+};
+
+// Participant number input
+var participant_number = {
+  type: 'survey-text',
+  questions: [{
+    prompt: '<div style="font-size:40px;"> 请输入您的编号：</div><br>',
+    required: true
+  }],
+  data: {task: 'participant_number'}
+};
+
+// Define the fixation cross
+var fixation = {
+  type: 'html-keyboard-response',
+  stimulus: '<div style="font-size:120px;font-weight: bold;">+</div>',
+  choices: jsPsych.NO_KEYS,
+  trial_duration: function() {
+    return Math.floor(Math.random() * 2000) + 1000; // 1-3秒
+  },
+  data: {task: 'fixation'}
+};
+
+// Define the stimulus display
+var stimulus = {
+  type: 'image-keyboard-response',
+  stimulus: jsPsych.timelineVariable('stimulus'),
+  choices: jsPsych.NO_KEYS,
+  trial_duration: 5000,
+  data: {task: 'stimulus', trial: jsPsych.timelineVariable('trial')}
+};
+
+// Define the blank screen
+var blank = {
+  type: 'html-keyboard-response',
+  stimulus: '<div style="font-size:60px;"></div>',
+  choices: jsPsych.NO_KEYS,
+  trial_duration: 1000,
+  data: {task: 'blank'}
+};
+
+// Define the combined rating for valence and arousal
+var rating = {
+  type: 'survey-likert',
+  preamble: '<p>请根据以下量表对您当前的情绪状态进行评分：</p>',
+  questions: [
+    {
+      prompt: valence_image_path,
+      name: 'valence',
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      required: true
+    },
+    {
+      prompt: arousal_image_path,
+      name: 'arousal',
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      required: true
+    }
+  ],
+  data: {
+    task: 'rating',
+    trial: jsPsych.timelineVariable('trial'),
+    cue: jsPsych.timelineVariable('cue')
+  },
+  on_load: () =>{
+    const labels = document.querySelectorAll('.jspsych-survey-likert-statement');
+    labels.forEach(label => {
+      const imgSrc = label.textContent.trim();
+      console.log(imgSrc);
+      if (imgSrc) {
+      const img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = '';
+      img.className = 'jspsych-survey-likert-statement';
+      img.style.width = '900px'; 
+        img.style.height = 'auto'; 
+      label.parentNode.replaceChild(img, label);
+    }
+    });
+  },
+  on_finish: function(data) {
+    var response = data.response;
+    data.valence = response.valence;
+    data.arousal = response.arousal;
+  }
+};
+
+// Define the end-of-block rating using survey-likert
+var end_of_block_rating = {
+  type: 'survey-likert',
+  preamble: function() {
+    var strategy = jsPsych.data.get().last(1).values()[0].cue;
+    return '<p><div style="font-size:30px;">在刚刚的几张图片中，您被要求使用以下策略：' + strategy + '</div></p>' +
+           '<p><div style="font-size:30px;">您在多大程度上遵循了该指令？1表示“完全没有”，9表示“非常好” </p>';
+  },
+  questions: [
+    {
+      prompt: "",
+      name: 'instruction_follow',
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      required: true
+    }
+  ],
+  data: {
+    task: 'end_of_block_rating',
+    strategy: function() { return jsPsych.data.get().last(1).values()[0].cue; }
+  },
+  on_finish: function(data) {
+    var response = data.response;
+    data.instruction_follow = response.instruction_follow;
+  }
+};
+
+// Define blocks with different strategies
+var strategies = [
+  {name: '自由观看', text: '请 观看以下图片。'},
+  {name: '分心', text: '请仔细观看以下图片。确保在观看时将您的思想集中在情绪中性的事物上。例如，想象一群鸟类在秋季迁徙。当您观看图片时，尽量集中注意力在这个中性想法上，保持专注于与图片内容无关的外部事物。'},
+  {name: '重新评估', text: '请仔细观看以下图片。在您观看图片时，试图以更积极的方式看待情况。这可以通过多种方式实现，例如，想象您可以向图片中的角色提供建议以改善他们的处境，或者考虑这件事对他们生活的积极影响。记住，即使现在的情况看起来很困难，但它可能会带来有益的结果。这个任务可能具有挑战性，因此请尽力而为，如果有问题请咨询研究助理。'},
+  {name: '压抑', text: '请仔细观看以下图片。如果您在观看图片时感到任何负面情绪，如悲伤，请尽量控制这些情绪。尽量不要表现出任何外部的情感，如皱眉或哭泣。观察您能在多大程度上控制自己的痛苦和不适。'},
+  {name: '接受', text: '请仔细观看以下图片。在您观察时，允许自己充分体验情绪，而不试图改变或压抑它们。这张图片可能会引起一些不适或负面情绪，这是正常的。让您的情绪自然流动，充分投入其中，而不试图控制。这可能具有挑战性，因此请尽力而为，如果需要帮助，请咨询研究助理。'}
+];
+
+// Define the strategy instruction screen 
+function instruction(strategy) {
+  return {
+    type: 'html-keyboard-response',
+    stimulus: `<div class="strategy-name">${strategy.name}</div><div class="strategy-text">${strategy.text}</div><p><div style="font-size:30px;">按回车键继续。</p>`,
+    choices: ['Enter'],
+    data: {task: 'instruction', strategy: strategy.name}
+  };
+}
+
+// Function to generate practice stimuli
+function generatePracticeStimuli() {
+  return practice_images.map(function(image) {
+    return {stimulus: base_path_practice + image + '.jpg'};
+  });
+}
+
+
+// Function to create practice trial
+function createPracticeTrial(strategy) {
+  var images = jsPsych.randomization.sampleWithoutReplacement(generatePracticeStimuli(), 2);
+  var practiceTrial = [];
+  
+  // Add reminder about practice trials
+  practiceTrial.push({
+    type: 'html-keyboard-response',
+    stimulus: '<div style="font-size:30px; color: red;">提醒：每个模块开始时您可以进行2次练习。</div>' +
+              '<p><div style="font-size:30px;">按回车键开始练习。</p>',
+    choices: ['Enter'],
+    data: {task: 'practice_reminder', strategy: strategy.name}
+  });
+
+  practiceTrial.push(instruction(strategy));
+
+  images.forEach(function(img, index) {
+    practiceTrial.push(fixation);
+    practiceTrial.push({
+      type: 'image-keyboard-response',
+      stimulus: img.stimulus,
+      choices: jsPsych.NO_KEYS,
+      trial_duration: 5000,
+      data: {task: 'stimulus', trial: strategy.name.toLowerCase().replace(' ', '_') + '_practice_' + (index + 1)}
+    });
+    practiceTrial.push(rating);
+  });
+
+  practiceTrial.push({
+    type: 'html-keyboard-response',
+    stimulus: '<div style="font-size:30px;">接下来，您将看到正式试验。按任意键继续。</div>',
+    choices: jsPsych.ALL_KEYS
+  });
+
+  return practiceTrial;
+}
+
+// Create blocks for each strategy
+var blocks = strategies.map(function(strategy) {
+  var trials = [];
+  trials = createPracticeTrial(strategy);
+  trials.push(instruction(strategy));
+  trials.push(createBlock(strategy));
+  trials.push(end_of_block_rating);
+  return {timeline: trials};
+});
+
+// Define the thank you screen
+var thankYouScreen = {
+  type: 'html-keyboard-response',
+  stimulus: '<div style="font-size:40px;">实验结束，感谢您的参与！</div>' +
+            '<p style="font-size:30px;">按任意键完成。</p>'
+};
+
+// Ensure 'Just Watch' is the first block and randomize the rest
+var timeline = [enterFullscreenMode, participant_number, introduction]
+.concat([blocks[0]])
+.concat(jsPsych.randomization.shuffle(blocks.slice(1)))
+.concat(thankYouScreen);;
+
+// Define the break screen
+var breakScreen = {
+  type: 'html-button-response',
+  stimulus: '<div style="font-size:40px;">您现在可以休息一下，如果愿意的话。</div>' +
+            '<p style="font-size:30px;">如果您想休息，随时可以休息，准备继续时请按“确定”。</p>' +
+            '<p style="font-size:30px;">如果您不想休息，请按“确定”继续。</p>',
+  choices: ['确定']
+};
+
+// Modify the timeline to add breaks after the 2nd and 4th blocks
+var timeline = [enterFullscreenMode, participant_number, introduction]
+.concat([blocks[0], blocks[1], breakScreen]) // Break after the 2nd block
+.concat([blocks[2], blocks[3], breakScreen]) // Break after the 4th block
+.concat([blocks[4], thankYouScreen]);
+
+
+
+// Initialize jsPsych
+jsPsych.init({
+  timeline: timeline,
+
+  on_finish: function() {
+    var participant_number = jsPsych.data.get().filter({task: 'participant_number'}).values()[0].response.Q0;
+    var total_time = jsPsych.totalTime();
+    var data = jsPsych.data.get().ignore('internal_node_id').csv();
+    var blob = new Blob([participant_number + ',' + total_time + '\n' + data], { type: 'text/csv' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'data_' + participant_number + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+});
+</script>
+</body>
+</html>
